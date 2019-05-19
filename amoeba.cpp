@@ -72,7 +72,7 @@ double func(vector <double> &A)
 vector <double> create_random_table(int N)
 {
 	/*
-	creating starting point of the system:
+	creating a starting point of the system:
 	n*n-dimentional table with random values
 	values range: [0, 2*pi)
 	*/
@@ -87,7 +87,7 @@ vector <double> create_random_table(int N)
 vector <double> create_ordered_table(int N)
 {
 	/*
-	creating starting point of the system:
+	creating a starting point of the system:
 	n*n-dimentional table with ordered values
 	values range: [0, 2*pi)
 	*/

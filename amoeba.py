@@ -68,7 +68,7 @@ def func(A):
 
 def create_random_table(n):
 	'''
-	creating starting point of the system:
+	creating a starting point of the system:
 	n*n-dimentional table with random values
 	values range: [0, 2*pi)
 	'''
@@ -79,7 +79,7 @@ def create_random_table(n):
 
 def create_ordered_table(n):
 	'''
-	creating starting point of the system:
+	creating a starting point of the system:
 	n*n-dimentional table with ordered values
 	values range: [0, 2*pi)
 	'''
