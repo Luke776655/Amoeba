@@ -2,7 +2,7 @@
 
 '''
 Python implementation of the Nelder-Mead optimization algorithm (amoeba).
-In this case algorithm is looking for the energetic minimum of the arrows system.
+In this case algorithm search for the energetic minimum of the arrows system.
 When all of the arrows are parallel, the system is in the global minimum.
 GNU GPL license v3
 
@@ -24,8 +24,8 @@ import sys
 
 n = 10 #dimention of side of pseudo-square table
 delta = 1 #displacement
-ftol = 1e-4 #fractional convergence tolerance
-nmax = 500000 #maximum allowed number of function evaluations
+ftol = 1e-6 #fractional convergence tolerance
+nmax = 10000000 #maximum allowed number of function evaluations
 tiny = 1e-7 #tiny value preventing from dividing by 0
 
 '''
@@ -77,7 +77,7 @@ def create_random_table(n):
 		tab.append(rd.uniform(0, 2*np.pi))
 	return tab
 
-def create_table(n):
+def create_ordered_table(n):
 	'''
 	creating starting point of the system:
 	n*n-dimentional table with ordered values
@@ -169,7 +169,7 @@ def get_psum(p, ndim, mpts):
 		psum.append(sum)
 	return psum
 
-def amotry(p, y, psum, ihi, fac):
+def amotry(p, y, psum, ihi, ndim, fac):
 	'''
 	extrapolation by a factor fac through the face of the simplex across from the high point
 	replacing the high point if the new point is better
@@ -189,18 +189,18 @@ def amotry(p, y, psum, ihi, fac):
 
 #creating point table as starting point in the system
 point = create_random_table(n)
+ndim = len(point)
 print_table(point, n)
 print_arrow_table(point, n)
-print(func(point))
+print("Energy of the system", func(point))
 
 #creating delta values table
 delta_tab = []
-for i in range(len(point)):
+for i in range(ndim):
 	delta_tab.append(delta)
 
 #adding delta values to the point table with extended dimention as p simplex
 p = []
-ndim = len(point)
 for i in range(ndim+1):
 	k=[]
 	for j in range(ndim):
@@ -212,7 +212,6 @@ for i in range(ndim+1):
 #getting y table of solutions
 y = []
 mpts = len(p) #number of rows
-ndim = len(p[0]) #number of columns
 for i in range(mpts):
 	x = []
 	for j in range(ndim):
@@ -259,12 +258,12 @@ while(True):
 
 	nfunc += 2
 	 
-	ytry = amotry(p, y, psum, ihi, -1.0) #simplex reflection
+	ytry = amotry(p, y, psum, ihi, ndim, -1.0) #simplex reflection
 	if(ytry<=y[ilo]):
-		ytry = amotry(p, y, psum, ihi, 2.0) #simplex extrapolation
+		ytry = amotry(p, y, psum, ihi, ndim, 2.0) #simplex extrapolation
 	elif(ytry >= y[inhi]):
 		ysave = y[ihi]
-		ytry = amotry(p, y, psum, ihi, 0.5) #simplex contraction
+		ytry = amotry(p, y, psum, ihi, ndim, 0.5) #simplex contraction
 		if(ytry>=ysave):
 			for i in range(mpts):
 				if(i!=ilo):
@@ -276,7 +275,7 @@ while(True):
 	else:
 		nfunc = nfunc-1
 
-	if(it%100 == 0):
+	if(it%1000 == 0):
 		print("\nIteration", it)
 		print_result(y, p, ndim, ilo)
 
