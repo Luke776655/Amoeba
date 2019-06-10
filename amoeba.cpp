@@ -23,15 +23,10 @@ lukasz.radzinski _at_ gmail _dot_ com
 
 using namespace std;
 
-const int N = 10; //dimention of side of pseudo-square table
-int delta = 1; //displacement
-double ftol = 1e-6; //fractional convergence tolerance
-int NMAX = 10000000; //maximum allowed number of function evaluations
-double TINY = 1e-7; //tiny value preventing from dividing by 0
 
 
 /*
-double func(vector <double> &A)
+double f(vector <double> &A)
 {
 	//simple multidimentional parabola function for testing optimisation
 	//global minimum in 0
@@ -41,10 +36,10 @@ double func(vector <double> &A)
 		s += A[i]*A[i];
 	}
 	return s;
-}
-*/
+}*/
 
-double func(vector <double> &A)
+
+double f(vector <double> &A)
 {
 	/*
 	potential energy function of the arrows system for testing optimisation
@@ -54,6 +49,7 @@ double func(vector <double> &A)
 	global E is the sum of all arrows energy
 	global energetic minimum is when all of the arrows are parallel, then global E = 0
 	*/
+	int N=15;
 	double s = 0;
 	for (int i = 0; i< N*N; i++)
 	{
@@ -69,7 +65,89 @@ double func(vector <double> &A)
 	return s;
 }
 
-vector <double> create_random_table(int N)
+class Amoeba
+{
+	public:
+		Amoeba(double func(vector <double> &v))
+		{
+			srand (time(NULL));
+			//creating point table as starting point in the system
+			point = create_random_table();
+			ndim = point.size();
+			print_table(point);
+			print_arrow_table(point);
+			printf("Energy of the system %f\n\n", func(point));
+			//creating delta values table
+			vector <int> delta_tab;
+			for(int i=0; i<ndim; i++)
+			{
+				delta_tab.push_back(delta);
+			}
+
+			//adding delta values to the point table with extended dimention as p simplex
+
+			for(int i=0; i<ndim+1; i++)
+			{
+				vector<double> k;
+				for(int j=0; j<ndim; j++)
+				{
+					k.push_back(point[j]);
+				}
+				p.push_back(k);
+				if(i!=0)
+				{
+					p[i][i-1]+=delta_tab[i-1];
+				}
+			}
+			//getting y table of solutions
+			y.resize(N*N+1);
+			//yhi = 0;
+			mpts = p.size(); //number of rows
+			for(int i = 0; i<mpts; i++)
+			{
+				vector <double> x;
+				for(int j=0; j<ndim; j++)
+				{
+					x.push_back(p[i][j]);
+				}
+				y[i] = (func(x));
+			}
+			//parameters for iterating
+			nfunc = 0;
+			psum = get_psum(p, ndim, mpts);
+			it = 0;
+			int w = -1;
+			while(w<0)
+			{
+				w = minimize(func);
+			}
+		};
+	private:
+		const int N=15; //dimention of side of pseudo-square table
+		int delta = 1; //displacement
+		double ftol = 1e-6; //fractional convergence tolerance
+		int NMAX = 10000000; //maximum allowed number of function evaluations
+		double TINY = 1e-7; //tiny value preventing from dividing by 0
+		vector <double> create_random_table();
+		void print_table(vector <double> tab);
+		void print_arrow(double s);
+		void print_arrow_table(vector <double> tab);
+		void print_result(vector <double> y, vector <vector <double> > &p, int ndim, int ilo);
+		vector <double> get_psum(vector <vector <double> > &p, int ndim, int mpts);
+		double amotry(vector <vector <double> > &p, vector <double> &psum, vector <double> &y, int ihi, int ndim, double fac, double func(vector <double> &v));
+		int minimize(double func(vector <double> &v));
+		vector<double> point;
+		int ndim;
+		vector <vector <double> > p;
+		vector <double> y;
+		//double yhi;
+		int mpts;
+		int it;
+		int nfunc;
+		vector <double> psum;
+};
+
+vector <double> Amoeba::create_random_table()
 {
 	/*
 	creating a starting point of the system:
@@ -84,22 +162,7 @@ vector <double> create_random_table(int N)
 	return tab;
 }
 
-vector <double> create_ordered_table(int N)
-{
-	/*
-	creating a starting point of the system:
-	n*n-dimentional table with ordered values
-	values range: [0, 2*pi)
-	*/
-	vector <double> tab(N*N);
-	for(int i = 0; i<N*N; i++)
-	{
-		tab[i] = fmod(i, 2*M_PI);
-	}
-	return tab;
-}
-
-void print_table(vector <double> tab, int N)
+void Amoeba::print_table(vector <double> tab)
 {
 	/*
 	printing values of the table
@@ -115,7 +178,7 @@ void print_table(vector <double> tab, int N)
 	printf("\n");
 }
 
-void print_arrow(double s)
+void Amoeba::print_arrow(double s)
 {
 	/*
 	printing value as an arrow with proper slope
@@ -140,7 +203,7 @@ void print_arrow(double s)
 		printf("x ");
 }
 
-void print_arrow_table(vector <double> tab, int N)
+void Amoeba::print_arrow_table(vector <double> tab)
 {
 	/*
 	printing values of the table as arrows with proper slope
@@ -154,7 +217,7 @@ void print_arrow_table(vector <double> tab, int N)
 	printf("\n\n");
 }
 
-void print_result(vector <double> y, vector <vector <double> > &p, int ndim, int ilo, int N)
+void Amoeba::print_result(vector <double> y, vector <vector <double> > &p, int ndim, int ilo)
 {
 	/*
 	printing result of optimisation
@@ -175,12 +238,12 @@ void print_result(vector <double> y, vector <vector <double> > &p, int ndim, int
 		pmin[i] = q[0][i];
 	}
 	double fmin=k[0];
-	print_table(pmin, N);
-	print_arrow_table(pmin, N);
+	print_table(pmin);
+	print_arrow_table(pmin);
 	printf("Energy of the system %f\n\n", fmin);
 }
 
-vector <double> get_psum(vector <vector <double> > &p, int ndim, int mpts)
+vector <double> Amoeba::get_psum(vector <vector <double> > &p, int ndim, int mpts)
 {
 	/*
 	counting partial sum
@@ -198,7 +261,7 @@ vector <double> get_psum(vector <vector <double> > &p, int ndim, int mpts)
 	return psum;
 }
 
-double amotry(vector <vector <double> > &p, vector <double> &psum, vector <double> &y, int ihi, int ndim, double fac)
+double Amoeba::amotry(vector <vector <double> > &p, vector <double> &psum, vector <double> &y, int ihi, int ndim, double fac, double func(vector <double> &v))
 {
 	/*
 	extrapolation by a factor fac through the face of the simplex across from the high point
@@ -224,65 +287,7 @@ double amotry(vector <vector <double> > &p, vector <double> &psum, vector <doubl
 	return ytry;
 }
 
-int main()
-{
-srand (time(NULL));
-
-//creating point table as starting point in the system
-vector<double> point(N*N);
-point = create_random_table(N);
-int ndim = point.size();
-print_table(point, N);
-print_arrow_table(point, N);
-printf("Energy of the system %f\n\n", func(point));
-
-
-//creating delta values table
-vector <int> delta_tab;
-for(int i=0; i<ndim; i++)
-{
-	delta_tab.push_back(delta);
-}
-
-//adding delta values to the point table with extended dimention as p simplex
-vector <vector <double> > p;
-for(int i=0; i<ndim+1; i++)
-{
-	vector<double> k;
-	for(int j=0; j<ndim; j++)
-	{
-		k.push_back(point[j]);
-	}
-	p.push_back(k);
-	if(i!=0)
-	{
-		p[i][i-1]+=delta_tab[i-1];
-	}
-}
-
-//getting y table of solutions
-vector <double> y(N*N+1);
-double yhi = 0;
-int mpts = p.size(); //number of rows
-vector <double> psum;
-for(int i = 0; i<mpts; i++)
-{
-	vector <double> x;
-	for(int j=0; j<ndim; j++)
-	{
-		x.push_back(p[i][j]);
-	}
-	y[i] = (func(x));
-}
-
-//parameters for iterating
-int nfunc = 0;
-psum = get_psum(p, ndim, mpts);
-int it = 0;
-
-
-//algorithm working in the iterative mode
-while(true)
+int Amoeba::minimize(double func(vector <double> &v))
 {
 	int ilo=0;
 	int ihi;
@@ -319,29 +324,29 @@ while(true)
 	if (rtol < ftol)
 	{
 		printf("\nIteration %d\n", it);
-		print_result(y, p, ndim, ilo, N);
+		print_result(y, p, ndim, ilo);
 		printf("Optimisation succeeded\n");
-		break;
+		return 0;
 	}
 
 	if (nfunc >= NMAX)
 	{
 		printf("\nIteration %d\n", it);
-		print_result(y, p, ndim, ilo, N);
+		print_result(y, p, ndim, ilo);
 		printf("Maximal number of iterations exceeded\n");
-		break;
+		return 1;
 	}
 	nfunc += 2;
 
-	double ytry = amotry(p, psum, y, ihi, ndim, -1.0); //simplex reflection
+	double ytry = amotry(p, psum, y, ihi, ndim, -1.0, func); //simplex reflection
 	if(ytry <= y[ilo])
 	{
-		ytry=amotry(p, psum, y, ihi, ndim, 2.0); //simplex extrapolation
+		ytry=amotry(p, psum, y, ihi, ndim, 2.0, func); //simplex extrapolation
 	}
 	else if (ytry >= y[inhi])
 	{
 		double ysave=y[ihi];
-		ytry=amotry(p, psum, y, ihi, ndim, 0.5); //simplex contraction
+		ytry=amotry(p, psum, y, ihi, ndim, 0.5, func); //simplex contraction
 		if(ytry >= ysave)
 		{
 			for (int i=0;i<mpts;i++) {
@@ -362,10 +367,15 @@ while(true)
 	if(it%1000 == 0)
 	{
 		printf("\nIteration %d\n", it);
-		print_result(y, p, ndim, ilo, N);
+		print_result(y, p, ndim, ilo);
 	}
 	it++;
-	
+	return -1;
 }
+
+int main()
+{
+	Amoeba a(f);
+	return 0;
 }
 
