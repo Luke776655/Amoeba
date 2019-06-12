@@ -49,29 +49,31 @@ double f(vector <double> &A)
 	global E is the sum of all arrows energy
 	global energetic minimum is when all of the arrows are parallel, then global E = 0
 	*/
-	int N=15;
 	double s = 0;
-	for (int i = 0; i< N*N; i++)
+	int N = A.size();
+	for (int i = 0; i<N; i++)
 	{
-		if(i>=N) //top boundary
-			s = s-cos(abs(A[i]-A[i-N]))+1;
-		if(i<N*N-N) //bottom boundary
-			s = s-cos(abs(A[i]-A[i+N]))+1;
-		if(i%N!=0) //left boundary
+		int k = sqrt(N);
+		if(i>=k) //top boundary
+			s = s-cos(abs(A[i]-A[i-k]))+1;
+		if(i<N-k) //bottom boundary
+			s = s-cos(abs(A[i]-A[i+k]))+1;
+		if(i%k!=0) //left boundary
 			s = s-cos(abs(A[i]-A[i-1]))+1;
-		if(i%N!=(N-1)) //right boundary
+		if(i%k!=(k-1)) //right boundary
 			s = s-cos(abs(A[i]-A[i+1]))+1;
 	}
 	return s;
 }
 
-class Amoeba
+template <class T> class Amoeba
 {
 	public:
-		Amoeba(double func(vector <double> &v))
+		Amoeba(double func(vector <T> &v), int n)
 		{
 			srand (time(NULL));
 			//creating point table as starting point in the system
+			N = n;
 			point = create_random_table();
 			ndim = point.size();
 			print_table(point);
@@ -88,7 +90,7 @@ class Amoeba
 
 			for(int i=0; i<ndim+1; i++)
 			{
-				vector<double> k;
+				vector<T> k;
 				for(int j=0; j<ndim; j++)
 				{
 					k.push_back(point[j]);
@@ -100,12 +102,12 @@ class Amoeba
 				}
 			}
 			//getting y table of solutions
-			y.resize(N*N+1);
+			y.resize(ndim+1);
 			//yhi = 0;
 			mpts = p.size(); //number of rows
 			for(int i = 0; i<mpts; i++)
 			{
-				vector <double> x;
+				vector <T> x;
 				for(int j=0; j<ndim; j++)
 				{
 					x.push_back(p[i][j]);
@@ -123,12 +125,12 @@ class Amoeba
 			}
 		};
 	private:
-		const int N=15; //dimention of side of pseudo-square table
+		int N; //dimention of side of pseudo-square table
 		int delta = 1; //displacement
 		double ftol = 1e-6; //fractional convergence tolerance
 		int NMAX = 10000000; //maximum allowed number of function evaluations
 		double TINY = 1e-7; //tiny value preventing from dividing by 0
-		vector <double> create_random_table();
+		vector <T> create_random_table();
 		void print_table(vector <double> tab);
 		void print_arrow(double s);
 		void print_arrow_table(vector <double> tab);
@@ -147,29 +149,29 @@ class Amoeba
 		vector <double> psum;
 };
 
-vector <double> Amoeba::create_random_table()
+template <class T> vector <T> Amoeba<T>::create_random_table()
 {
 	/*
 	creating a starting point of the system:
-	n*n-dimentional table with random values
+	n-dimentional table with random values
 	values range: [0, 2*pi)
 	*/
-	vector <double> tab(N*N);
-	for(int i = 0; i<N*N; i++)
+	vector <T> tab(N);
+	for(int i = 0; i<N; i++)
 	{
 		tab[i] = fmod(rand(), 2*M_PI);
 	}
 	return tab;
 }
 
-void Amoeba::print_table(vector <double> tab)
+template <class T> void Amoeba<T>::print_table(vector <double> tab)
 {
 	/*
 	printing values of the table
 	*/
-	for(int i = 0; i<N*N; i++)
+	for(int i = 0; i<N; i++)
 	{
-		if(i%N==0)
+		if(i%(int)sqrt(N)==0)
 		{
 			printf("\n");
 		}
@@ -178,7 +180,7 @@ void Amoeba::print_table(vector <double> tab)
 	printf("\n");
 }
 
-void Amoeba::print_arrow(double s)
+template <class T> void Amoeba<T>::print_arrow(double s)
 {
 	/*
 	printing value as an arrow with proper slope
@@ -203,21 +205,21 @@ void Amoeba::print_arrow(double s)
 		printf("x ");
 }
 
-void Amoeba::print_arrow_table(vector <double> tab)
+template <class T> void Amoeba<T>::print_arrow_table(vector <double> tab)
 {
 	/*
 	printing values of the table as arrows with proper slope
 	*/
-	for(int i=0; i<N*N; i++)
+	for(int i=0; i<N; i++)
 	{
-		if(i%N==0)
+		if(i%(int)sqrt(N)==0)
 			printf("\n");
 		print_arrow(fmod(fmod(tab[i], 2*M_PI)+2*M_PI, 2*M_PI));
 	}
 	printf("\n\n");
 }
 
-void Amoeba::print_result(vector <double> y, vector <vector <double> > &p, int ndim, int ilo)
+template <class T> void Amoeba<T>::print_result(vector <double> y, vector <vector <double> > &p, int ndim, int ilo)
 {
 	/*
 	printing result of optimisation
@@ -243,7 +245,7 @@ void Amoeba::print_result(vector <double> y, vector <vector <double> > &p, int n
 	printf("Energy of the system %f\n\n", fmin);
 }
 
-vector <double> Amoeba::get_psum(vector <vector <double> > &p, int ndim, int mpts)
+template <class T> vector <double> Amoeba<T>::get_psum(vector <vector <double> > &p, int ndim, int mpts)
 {
 	/*
 	counting partial sum
@@ -261,7 +263,7 @@ vector <double> Amoeba::get_psum(vector <vector <double> > &p, int ndim, int mpt
 	return psum;
 }
 
-double Amoeba::amotry(vector <vector <double> > &p, vector <double> &psum, vector <double> &y, int ihi, int ndim, double fac, double func(vector <double> &v))
+template <class T> double Amoeba<T>::amotry(vector <vector <double> > &p, vector <double> &psum, vector <double> &y, int ihi, int ndim, double fac, double func(vector <double> &v))
 {
 	/*
 	extrapolation by a factor fac through the face of the simplex across from the high point
@@ -287,7 +289,7 @@ double Amoeba::amotry(vector <vector <double> > &p, vector <double> &psum, vecto
 	return ytry;
 }
 
-int Amoeba::minimize(double func(vector <double> &v))
+template <class T> int Amoeba<T>::minimize(double func(vector <double> &v))
 {
 	int ilo=0;
 	int ihi;
@@ -375,7 +377,7 @@ int Amoeba::minimize(double func(vector <double> &v))
 
 int main()
 {
-	Amoeba a(f);
+	Amoeba<double> a(f, 15*15);
 	return 0;
 }
 
